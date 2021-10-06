@@ -12,13 +12,15 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 )
 
 func main() {
 	counts := make(map[string]int)
+	foundInFile := make(map[string]string)
 	files := os.Args[1:]
 	if len(files) == 0 {
-		countLines(os.Stdin, counts)
+		countLines(os.Stdin, counts, foundInFile)
 	} else {
 		for _, arg := range files {
 			f, err := os.Open(arg)
@@ -26,21 +28,25 @@ func main() {
 				fmt.Fprintf(os.Stderr, "dup2: %v\n", err)
 				continue
 			}
-			countLines(f, counts)
+			countLines(f, counts, foundInFile)
 			f.Close()
 		}
 	}
 	for line, n := range counts {
 		if n > 1 {
 			fmt.Printf("%d\t%s\n", n, line)
+			fmt.Printf("found in files [%s]\n", strings.TrimSpace(foundInFile[line]))
 		}
 	}
 }
 
-func countLines(f *os.File, counts map[string]int) {
+func countLines(f *os.File, counts map[string]int, foundInFile map[string]string) {
 	input := bufio.NewScanner(f)
 	for input.Scan() {
 		counts[input.Text()]++
+		if ! strings.Contains(foundInFile[input.Text()], f.Name()) {
+			 foundInFile[input.Text()] += f.Name() + " "
+		}
 	}
 	// NOTE: ignoring potential errors from input.Err()
 }
